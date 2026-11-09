@@ -2,6 +2,7 @@ from pythonforandroid.recipe import PyProjectRecipe
 
 
 class VnoiseRecipe(PyProjectRecipe):
+    extra_build_args = ["--no-isolation"]
     """Vnoise is pure python but latest version on pypi uses pkg_resources, which is 
     deprecated and throws an exception in latest python versions. We can use this fork until
     the issue is resolved upstream.

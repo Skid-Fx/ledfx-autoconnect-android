@@ -46,7 +46,7 @@ def signal_main_activity_to_exit():
         Intent = autoclass('android.content.Intent')
         PythonService = autoclass('org.kivy.android.PythonService')
         service = PythonService.mService
-        intent = Intent('com.ledfx.EXIT_APP')
+        intent = Intent('com.skidfx.ledfxautoconnect.EXIT_APP')
         service.sendBroadcast(intent)
     except Exception as e:
         logging.getLogger('ledfx-android').exception('Failed to signal main activity to exit: %s', e)

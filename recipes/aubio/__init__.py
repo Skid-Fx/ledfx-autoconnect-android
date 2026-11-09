@@ -2,6 +2,7 @@ from pythonforandroid.recipe import PyProjectRecipe
 
 
 class AubioRecipe(PyProjectRecipe):
+    extra_build_args = ["--no-isolation"]
     
     # v0.5.0-alpha
     version = "5461304"  # use commit hash because no v0.5 tag exists at this point

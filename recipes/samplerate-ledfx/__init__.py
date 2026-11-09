@@ -1,8 +1,10 @@
 from os.path import join
+from pathlib import Path
 from pythonforandroid.recipe import PyProjectRecipe
 
 
 class SamplerateLedfxRecipe(PyProjectRecipe):
+    extra_build_args = ["--no-isolation"]
 
     version = 'v0.2.3'
     url = 'git+https://github.com/ledfx/python-samplerate-ledfx'
@@ -12,7 +14,22 @@ class SamplerateLedfxRecipe(PyProjectRecipe):
     def get_recipe_env(self, arch, **kwargs):
         env = super().get_recipe_env(arch, **kwargs)
         
+        python_lib = (
+            Path(self.ctx.build_dir)
+            / "other_builds"
+            / "python3"
+            / f"{arch.arch}__ndk_target_24"
+            / "python3"
+            / "android-build"
+            / "libpython3.11.so"
+        )
+
+        if not python_lib.is_file():
+            raise FileNotFoundError(f"Android Python library missing: {python_lib}")
+
         env['CMAKE_ARGS'] = ' '.join([
+            f'-DPYTHON_LIBRARY={python_lib}',
+            f'-DPYTHON_LIBRARIES={python_lib}',
             env.get('CMAKE_ARGS', ''),  # existing CMAKE_ARGS, if any
             '-DCMAKE_SYSTEM_NAME=Android',  # tell cmake to cross compile for Android
             f'-DCMAKE_ANDROID_ARCH_ABI={arch.arch}',  # set ABI version

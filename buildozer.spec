@@ -6,13 +6,13 @@
 [app]
 
 # (str) Title of your application
-title = LedFx
+title = LedFx Autoconnect
 
 # (str) Package name
-package.name = ledfx
+package.name = ledfxautoconnect
 
 # (str) Package domain (needed for android/ios packaging)
-package.domain = com.ledfx
+package.domain = com.skidfx
 
 # (str) Source code where the main.py live
 source.dir = src
@@ -35,7 +35,7 @@ source.include_exts = py,png,jpg,kv,atlas
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3,android,ledfx,qrcode
+requirements = python3,android,ledfx,qrcode,attrs,async-timeout,typing-extensions,charset-normalizer
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
@@ -65,7 +65,7 @@ orientation = all
 # launched. This is optionally followed by ":foreground" for foreground services or
 # ":foreground:sticky" for sticky foreground services. The default is a background service.
 # Bound services are not supported.
-services = ledfx:service.py:foreground:sticky
+services = ledfx:service.py:foreground:sticky:foregroundServiceType=mediaPlayback
 
 #
 # OSX Specific
@@ -104,7 +104,7 @@ android.presplash_color = #000000
 # (list) Permissions
 # (See https://python-for-android.readthedocs.io/en/latest/buildoptions.html for all the supported syntaxes and properties)
 #android.permissions = android.permission.INTERNET, (name=android.permission.WRITE_EXTERNAL_STORAGE;maxSdkVersion=18)
-android.permissions = INTERNET, READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE, MODIFY_AUDIO_SETTINGS, RECORD_AUDIO, FOREGROUND_SERVICE, FOREGROUND_SERVICE_MEDIA_PLAYBACK
+android.permissions = INTERNET, READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE, MODIFY_AUDIO_SETTINGS, RECORD_AUDIO, WAKE_LOCK, FOREGROUND_SERVICE, FOREGROUND_SERVICE_MEDIA_PLAYBACK
 
 # (list) features (adds uses-feature -tags to manifest)
 #android.features = android.hardware.usb.host
@@ -337,6 +337,7 @@ p4a.fork = broccoliboy
 
 # (str) python-for-android branch to use, defaults to master
 p4a.branch = develop
+p4a.commit = c02cf781
 
 # (str) python-for-android specific commit to use, defaults to HEAD, must be within p4a.branch
 #p4a.commit = HEAD

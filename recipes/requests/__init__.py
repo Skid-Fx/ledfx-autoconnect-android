@@ -2,6 +2,7 @@ from pythonforandroid.recipe import PythonRecipe, PyProjectRecipe
 
 
 class RequestsRecipe(PyProjectRecipe):
+    extra_build_args = ["--no-isolation"]
     name = 'requests'
     version = 'v2.32.5'
     url = 'https://github.com/psf/requests/archive/{version}.tar.gz'

@@ -4,6 +4,7 @@ from pythonforandroid.recipe import PyProjectRecipe
 
 
 class UvloopRecipe(PyProjectRecipe):
+    extra_build_args = ["--no-isolation"]
     version = 'v0.22.1'
     url = 'git+https://github.com/MagicStack/uvloop'
     depends = ['librt', 'libpthread']

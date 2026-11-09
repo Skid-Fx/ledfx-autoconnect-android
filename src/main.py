@@ -31,7 +31,7 @@ def main():
     title = 'LedFx'
     content = 'LedFx is running in the background'
     args = ''
-    service = autoclass('com.ledfx.ledfx.ServiceLedfx')
+    service = autoclass('com.skidfx.ledfxautoconnect.ServiceLedfx')
     service.start(mActivity, small_icon, title, content, args)
     
     def exit_handler(context, intent):
@@ -42,7 +42,7 @@ def main():
     
     BroadcastReceiver(
         exit_handler,
-        actions=['com.ledfx.EXIT_APP']
+        actions=['com.skidfx.ledfxautoconnect.EXIT_APP']
     ).start()
     
     if is_leanback():

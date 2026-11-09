@@ -1,5 +1,40 @@
-.buildozer
-bin
-__pycache__
+# Android build outputs
+.buildozer/
+bin/
+.gradle/
+build/
+*.apk
+*.aab
+
+# Python caches
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Development logs
+*.log
+
+# Temporary files and backups
+*.backup
+*.before-*
+A
+Get
+Run
+Task
+directory
+running
+
+# Operating system and editor files
 .DS_Store
-/*.log
+Thumbs.db
+.idea/
+.vscode/
+
+# Signing credentials and secrets
+*.keystore
+*.jks
+*.pem
+*.key
+.env
+.env.*

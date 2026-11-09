@@ -8,6 +8,7 @@ from pythonforandroid.recipe import PyProjectRecipe
 
 
 class LedFxRecipe(PyProjectRecipe):
+    extra_build_args = ["--no-isolation"]
     """
     This recipe instructs python-for-android how to build LedFx. The LedFx source is expected to be already located in deps/ledfx
     """

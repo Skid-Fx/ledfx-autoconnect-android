@@ -2,6 +2,7 @@ from pythonforandroid.recipe import PyProjectRecipe
 
 
 class ZeroconfRecipe(PyProjectRecipe):
+    extra_build_args = ["--no-isolation"]
     name = 'zeroconf'
     version = '0.148.0'
     url = 'https://github.com/jstasiak/python-zeroconf/archive/{version}.tar.gz'

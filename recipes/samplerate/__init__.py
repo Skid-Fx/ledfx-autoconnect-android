@@ -1,6 +1,7 @@
 from pythonforandroid.recipe import PyProjectRecipe
 
 class SamplerateRecipe(PyProjectRecipe):
+    extra_build_args = ["--no-isolation"]
     
     version = 'v0.2.1'
     url = 'git+https://github.com/tuxu/python-samplerate'
