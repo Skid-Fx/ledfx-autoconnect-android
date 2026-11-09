@@ -28,4 +28,4 @@ TEMPLATE="$P4A_DIR/pythonforandroid/bootstraps/webview/build/templates/AndroidMa
 
 python3 scripts/patch_android_manifest.py "$TEMPLATE"
 
-echo "PASS: Android build environment prepared"
+echo "PASS: Android build preparation completed"

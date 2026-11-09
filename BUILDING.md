@@ -38,6 +38,25 @@ Create a Python environment and install the locked dependencies:
     .venv/bin/python -m pip install uv==0.13.7
     .venv/bin/uv sync --locked --no-dev
 
+### Python-for-Android build dependencies
+
+The Buildozer environment uses Python 3.12.16. Python-for-Android
+builds a separate Python 3.11.5 host interpreter.
+
+The custom NumPy recipe declares its Meson build requirements through
+`hostpython_prerequisites`, allowing Python-for-Android to install them
+after its host interpreter becomes available.
+
+The custom Pillow recipe includes `recipes/Pillow/setup.py.patch`.
+This patch is required for Android cross-compilation and correct
+handling of the JPEG library paths.
+
+Do not manually replace the NumPy or Pillow recipes with upstream
+versions, or remove the Pillow patch.
+
+The original working APK was produced using this toolchain. A fresh
+build from a clean checkout remains unverified.
+
 ## 4. Prepare and build Android
 
     ./scripts/prepare_android_build.sh
