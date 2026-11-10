@@ -2,6 +2,7 @@ from pythonforandroid.recipe import MesonRecipe
 
 
 class AubioLedfxRecipe(MesonRecipe):
+    patches = ["android-cross-python.patch"]
     
     meson_version = "1.9.1"
 

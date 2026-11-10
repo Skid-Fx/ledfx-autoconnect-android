@@ -18,12 +18,6 @@ venv/
 # Temporary files and backups
 *.backup
 *.before-*
-A
-Get
-Run
-Task
-directory
-running
 
 # Operating system and editor files
 .DS_Store

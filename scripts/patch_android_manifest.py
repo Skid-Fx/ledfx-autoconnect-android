@@ -1,32 +1,46 @@
 #!/usr/bin/env python3
-"""Configure the LedFx AutoConnect Android foreground service template."""
+"""Configure the LedFx Android foreground service manifest template."""
 
 import argparse
+import re
 from pathlib import Path
 
 parser = argparse.ArgumentParser()
 parser.add_argument("template", type=Path)
 args = parser.parse_args()
 
-template = args.template
+if not args.template.is_file():
+    raise SystemExit(f"ERROR: Template not found: {args.template}")
 
-if not template.is_file():
-    raise SystemExit(f"ERROR: Template not found: {template}")
+text = args.template.read_text()
 
-text = template.read_text()
+pattern = (
+    r'<service\s+'
+    r'android:name="\{\{ args\.package \}\}\.Service'
+    r'\{\{ name\|capitalize \}\}"'
+    r'\s+android:process=":service_\{\{ name \}\}"'
+    r'(?:\s+android:[A-Za-z]+="[^"]*")*'
+    r'\s*/>'
+)
 
-old = '''<service android:name="{{ args.package }}.Service{{ name|capitalize }}"
-                 android:process=":service_{{ name }}" />'''
+replacement = (
+    '<service android:name="{{ args.package }}.Service{{ name|capitalize }}"'
+    '\n                 android:process=":service_{{ name }}"'
+    '\n                 android:foregroundServiceType="connectedDevice"'
+    '\n                 android:stopWithTask="true" />'
+)
 
-new = '''<service android:name="{{ args.package }}.Service{{ name|capitalize }}"
-                 android:process=":service_{{ name }}"
-                 android:foregroundServiceType="mediaPlayback"
-                 android:stopWithTask="true" />'''
+updated, count = re.subn(pattern, lambda _: replacement, text)
 
-if new in text:
-    print("PASS: Android service template already patched")
-elif text.count(old) == 1:
-    template.write_text(text.replace(old, new, 1))
+if count != 1:
+    raise SystemExit(
+        f"ERROR: Expected exactly one service template, found {count}."
+    )
+
+if updated != text:
+    args.template.write_text(updated)
     print("PASS: Android service template patched")
 else:
-    raise SystemExit("ERROR: Unexpected template format. No changes made.")
+    print("PASS: Android service template already patched")
+
+assert replacement in updated

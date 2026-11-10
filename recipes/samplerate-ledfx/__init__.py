@@ -13,6 +13,34 @@ class SamplerateLedfxRecipe(PyProjectRecipe):
 
     def get_recipe_env(self, arch, **kwargs):
         env = super().get_recipe_env(arch, **kwargs)
+
+        # AUTO_HOSTPY_PYTHONPATH: Use the proven p4a Python 3.11 environment.
+        import os
+        from pathlib import Path
+
+        host = (
+            Path(self.ctx.build_dir)
+            / "other_builds"
+            / "hostpython3"
+            / "desktop"
+            / "hostpython3"
+            / "native-build"
+        )
+
+        if not (host / "python3").is_file():
+            raise RuntimeError("p4a host Python 3.11 is missing")
+
+        paths = [
+            str(host / "Lib"),
+            str(host / "Lib/site-packages"),
+            str(host / "build/lib.linux-x86_64-3.11"),
+        ]
+
+        if env.get("PYTHONPATH"):
+            paths.append(env["PYTHONPATH"])
+
+        env["PYTHONPATH"] = os.pathsep.join(paths)
+
         
         python_lib = (
             Path(self.ctx.build_dir)

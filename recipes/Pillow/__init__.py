@@ -29,8 +29,36 @@ class PillowRecipe(PyProjectRecipe):
     site_packages_name = 'PIL'
     patches = ["setup.py.patch"]
     depends = ['png', 'jpeg', 'freetype']
-    hostpython_prerequisites = ["setuptools>=77"]
+    hostpython_prerequisites = ["setuptools==84.2.1"]
     opt_depends = ['libwebp']
+
+    def install_hostpython_prerequisites(self, packages=None, force_upgrade=True):
+        super().install_hostpython_prerequisites(packages, force_upgrade)
+
+        from pathlib import Path
+
+        site = Path(self.hostpython_site_dir)
+        stale = site / "setuptools-69.2.0-py3.11.egg-info"
+        current = site / "setuptools-84.2.1.dist-info"
+
+        if stale.exists():
+            if not current.is_dir():
+                raise RuntimeError("Required setuptools 84.2.1 metadata missing")
+
+            backup = site.parent / "setuptools-metadata-backup"
+            destination = backup / stale.name
+
+            if destination.exists():
+                print("WARNING: Obsolete setuptools metadata returned")
+
+            number = 1
+            while destination.exists():
+                destination = backup / f"{stale.name}.repeat-{number}"
+                number += 1
+
+            backup.mkdir(exist_ok=True)
+            stale.rename(destination)
+            print("PASS: Obsolete setuptools metadata quarantined")
 
     def get_recipe_env(self, arch, **kwargs):
         env = super().get_recipe_env(arch, **kwargs)

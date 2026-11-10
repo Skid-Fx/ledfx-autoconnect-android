@@ -1,0 +1,26 @@
+--- a/python/meson.build
++++ b/python/meson.build
+@@ -107,19 +107,20 @@
+ # For portable wheels, always link against the static library
+ # This bundles all aubio code into the Python extension
+ pyaubio_link_with = libaubio_static
+-pyaubio_deps = [py.dependency()]
++pyaubio_deps = [] # Android Python headers and library supplied by cross-file
+ # Add aubio's dependencies directly since we're linking statically
+ pyaubio_deps += dependencies
+ 
+-py.extension_module('_aubio',
++shared_module('_aubio',
+   pyaubio_sources,
+   include_directories: [pyaubio_inc, numpy_inc, config_inc],
+   dependencies: pyaubio_deps,
+   c_args: pyaubio_c_args,
+   link_args: pyaubio_link_args,
+   link_with: pyaubio_link_with,
++  name_prefix: '',
+   install: true,
+-  subdir: 'aubio',
++  install_dir: py.get_install_dir(pure: false) / 'aubio',
+ )
+ 
+ # Install Python package files

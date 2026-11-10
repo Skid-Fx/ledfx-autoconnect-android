@@ -24,8 +24,20 @@ if [ "$CURRENT_COMMIT" != "$P4A_COMMIT" ]; then
     exit 1
 fi
 
-TEMPLATE="$P4A_DIR/pythonforandroid/bootstraps/webview/build/templates/AndroidManifest.tmpl.xml"
+# Patch the upstream, cached bootstrap, and distribution templates.
+# Cached distributions may otherwise retain the original manifest.
+TEMPLATES=(
+    "$P4A_DIR/pythonforandroid/bootstraps/webview/build/templates/AndroidManifest.tmpl.xml"
+    ".buildozer/android/platform/build-armeabi-v7a_arm64-v8a/build/bootstrap_builds/webview/templates/AndroidManifest.tmpl.xml"
+    ".buildozer/android/platform/build-armeabi-v7a_arm64-v8a/dists/ledfxautoconnect/templates/AndroidManifest.tmpl.xml"
+)
 
-python3 scripts/patch_android_manifest.py "$TEMPLATE"
+for TEMPLATE in "${TEMPLATES[@]}"; do
+    if [ -f "$TEMPLATE" ]; then
+        python3 scripts/patch_android_manifest.py "$TEMPLATE"
+    else
+        echo "INFO: Template not generated yet: $TEMPLATE"
+    fi
+done
 
 echo "PASS: Android build preparation completed"

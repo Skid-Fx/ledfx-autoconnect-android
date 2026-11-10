@@ -61,8 +61,17 @@ class BroadcastReceiver(object):
         Handler = autoclass('android.os.Handler')
         self.handlerthread.start()
         self.handler = Handler(self.handlerthread.getLooper())
-        self.context.registerReceiver(
-            self.receiver, self.receiver_filter, None, self.handler)
+        Build = autoclass('android.os.Build$VERSION')
+        Context = autoclass('android.content.Context')
+
+        if Build.SDK_INT >= 33:
+            self.context.registerReceiver(
+                self.receiver, self.receiver_filter,
+                None, self.handler, Context.RECEIVER_NOT_EXPORTED)
+        else:
+            self.context.registerReceiver(
+                self.receiver, self.receiver_filter,
+                None, self.handler)
 
     def stop(self):
         self.context.unregisterReceiver(self.receiver)

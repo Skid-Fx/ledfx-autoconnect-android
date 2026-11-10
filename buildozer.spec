@@ -65,7 +65,7 @@ orientation = all
 # launched. This is optionally followed by ":foreground" for foreground services or
 # ":foreground:sticky" for sticky foreground services. The default is a background service.
 # Bound services are not supported.
-services = ledfx:service.py:foreground:sticky:foregroundServiceType=mediaPlayback
+services = ledfx:service.py:foreground:sticky:foregroundServiceType=connectedDevice
 
 #
 # OSX Specific
@@ -104,7 +104,7 @@ android.presplash_color = #000000
 # (list) Permissions
 # (See https://python-for-android.readthedocs.io/en/latest/buildoptions.html for all the supported syntaxes and properties)
 #android.permissions = android.permission.INTERNET, (name=android.permission.WRITE_EXTERNAL_STORAGE;maxSdkVersion=18)
-android.permissions = INTERNET, READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE, MODIFY_AUDIO_SETTINGS, RECORD_AUDIO, WAKE_LOCK, FOREGROUND_SERVICE, FOREGROUND_SERVICE_MEDIA_PLAYBACK
+android.permissions = INTERNET, READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE, MODIFY_AUDIO_SETTINGS, RECORD_AUDIO, WAKE_LOCK, FOREGROUND_SERVICE, FOREGROUND_SERVICE_CONNECTED_DEVICE, CHANGE_NETWORK_STATE
 
 # (list) features (adds uses-feature -tags to manifest)
 #android.features = android.hardware.usb.host
@@ -349,7 +349,7 @@ p4a.commit = c02cf781
 p4a.local_recipes = recipes
 
 # (str) Filename to the hook for p4a
-#p4a.hook =
+p4a.hook = scripts/p4a_hook.py
 
 # (str) Bootstrap to use for android builds
 # Run "buildozer android p4a -- bootstraps" for a list of valid values.
