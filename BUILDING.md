@@ -157,12 +157,19 @@ Functional phone tests required before publishing: Android startup and service; 
 
 ## 7. Windows Downloads and wireless debugging
 
-Copy from WSL to Windows Downloads (adjust the Windows username/path for your machine):
+Copy the APK to your Windows Downloads directory.
+
+Run in WSL Ubuntu:
 
 ```bash
-cp -v bin/ledfxautoconnect-2.1.5-armeabi-v7a_arm64-v8a-debug.apk \
-  /mnt/c/Users/v8pow/Downloads/LedFx-AutoConnect-WLED-Discovery-Test.apk
-sha256sum bin/*.apk /mnt/c/Users/v8pow/Downloads/LedFx-AutoConnect-WLED-Discovery-Test.apk
+# Automatically locate your Windows Downloads directory
+WIN_DOWNLOADS="$(wslpath "$(cmd.exe /C 'echo %USERPROFILE%' 2>/dev/null | tr -d '\r')")/Downloads"
+
+APK="bin/ledfxautoconnect-2.1.5-armeabi-v7a_arm64-v8a-debug.apk"
+DEST="$WIN_DOWNLOADS/LedFx-AutoConnect-WLED-Discovery-Test.apk"
+
+cp -v "$APK" "$DEST"
+sha256sum "$APK" "$DEST"
 ```
 
 In **Windows PowerShell**, not Ubuntu:
