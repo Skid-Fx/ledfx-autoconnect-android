@@ -169,7 +169,8 @@ In **Windows PowerShell**, not Ubuntu:
 
 ```powershell
 adb devices
-$device = 'adb-RFGL14XLWML-ChOaRk._adb-tls-connect._tcp' # example: use the ID reported by adb devices
+# Copy your device identifier from the output of adb devices
+$device = 'YOUR_ADB_DEVICE_ID'
 $apk = "$env:USERPROFILE\Downloads\LedFx-AutoConnect-WLED-Discovery-Test.apk"
 adb -s $device install -r $apk
 adb -s $device shell am force-stop --user 0 com.skidfx.ledfxautoconnect
