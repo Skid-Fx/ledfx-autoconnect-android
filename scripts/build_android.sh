@@ -271,6 +271,7 @@ print("PASS: Aubio cross-compilation checks completed")
 PYAUBIOCHECK
 
 if [ "${1:-}" = "--prepare-only" ]; then
+    ./scripts/prepare_frontend.sh --prepare-only
     echo "PASS: Environment preparation checks completed"
     echo "No Android compilation started"
     exit 0
@@ -280,6 +281,10 @@ if [ "$#" -ne 0 ]; then
     echo "Usage: $0 [--prepare-only]"
     exit 2
 fi
+
+# Prepare and package the current React frontend before Android compilation.
+./scripts/prepare_frontend.sh
+python3 scripts/sync_wled_scan_api.py
 
 # Refresh Android receiver bytecode using Python 3.11.
 # Cached distributions may otherwise package outdated receiver code.
