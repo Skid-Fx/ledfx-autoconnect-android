@@ -1,0 +1,115 @@
+{
+    "publish": {
+        "provider": "generic",
+        "url": "https://github.com/YeonV/LedFx-Frontend-v2"
+    },
+    "productName": "LedFx-Client",
+    "appId": "M349WJSL2N.com.blade.ledfx",
+    "directories": {
+        "buildResources": "buildResources",
+        "output": "dist"
+    },
+    "files": [
+        "build/",
+        "node_modules/",
+        "package.json"
+    ],
+    "extraResources": [
+        {
+            "from": "extraResources/enable_ledfx_ssl.ps1",
+            "to": "extraResources/enable_ledfx_ssl.ps1"
+        },
+        {
+            "from": "extraResources/disable_ledfx_ssl.ps1",
+            "to": "extraResources/disable_ledfx_ssl.ps1"
+        },
+        {
+            "from": "extraResources/enable_ledfx_ssl_mac.sh",
+            "to": "extraResources/enable_ledfx_ssl_mac.sh"
+        },
+        {
+            "from": "extraResources/disable_ledfx_ssl_mac.sh",
+            "to": "extraResources/disable_ledfx_ssl_mac.sh"
+        },
+        {
+            "from": "extraResources/enable_ledfx_ssl_linux.sh",
+            "to": "extraResources/enable_ledfx_ssl_linux.sh"
+        },
+        {
+            "from": "extraResources/disable_ledfx_ssl_linux.sh",
+            "to": "extraResources/disable_ledfx_ssl_linux.sh"
+        },
+        {
+            "from": "public/splash.html",
+            "to": "splash.html"
+        },
+        {
+            "from": "public/banner.png",
+            "to": "banner.png"
+        }
+    ],
+    "protocols": [
+        {
+            "name": "LedFx",
+            "schemes": [
+                "ledfx"
+            ]
+        }
+    ],
+    "mac": {
+        "target": [
+            "dmg",
+            "zip"
+        ],
+        "icon": "build/icon.png",
+        "artifactName": "LedFx_client-v${version}--${os}-${arch}.${ext}",
+        "category": "public.app-category.utilities",
+        "hardenedRuntime": true,
+        "gatekeeperAssess": false,
+        "entitlements": "entitlements.mac.plist",
+        "entitlementsInherit": "entitlements.mac.inherit.plist",
+        "type": "distribution",
+        "identity": "CEE631E9774D506963ECC20D6BFA8213FB07B2B1"
+    },
+    "dmg": {
+        "background": "src/assets/DMG_BG.jpg",
+        "contents": [
+            {
+                "x": 135,
+                "y": 165
+            },
+            {
+                "x": 407,
+                "y": 165,
+                "type": "link",
+                "path": "/Applications"
+            }
+        ],
+        "iconSize": 120,
+        "iconTextSize": 14,
+        "window": {
+            "height": 380
+        }
+    },
+    "win": {
+        "target": [
+            "nsis",
+            "zip"
+        ],
+        "icon": "build/icon.ico",
+        "artifactName": "LedFx_client-v${version}--${os}.${ext}"
+    },
+    "portable": {
+        "artifactName": "LedFx_client-v${version}--${os}-portable.${ext}"
+    },
+    "nsis": {
+        "artifactName": "LedFx_client-v${version}--${os}-setup.${ext}"
+    },
+    "linux": {
+        "target": [
+            "AppImage",
+            "snap"
+        ],
+        "artifactName": "LedFx_client-v${version}--${os}.${ext}"
+    }
+}

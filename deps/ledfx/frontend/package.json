@@ -1,0 +1,347 @@
+{
+  "name": "ledfx",
+  "version": "2.1.4-b12",
+  "description": "LedFx v2 - BladeMOD",
+  "author": "YeonV aka Blade",
+  "private": true,
+  "main": "public/electron.js",
+  "homepage": ".",
+  "engines": {
+    "node": ">=20"
+  },
+  "type": "module",
+  "dependencies": {
+    "@dnd-kit/core": "^6.2.0",
+    "@dnd-kit/modifiers": "^9.0.0",
+    "@electron/remote": "^2.0.9",
+    "@emotion/react": "^11.13.5",
+    "@emotion/styled": "^11.13.5",
+    "@eslint/eslintrc": "^3.2.0",
+    "@eslint/js": "^9.26.0",
+    "@hello-pangea/dnd": "^18.0.1",
+    "@mui/icons-material": "^7.1.1",
+    "@mui/lab": "^7.0.1-beta.20",
+    "@mui/material": "^7.1.1",
+    "@mui/styles": "^6.3.1",
+    "@mui/system": "^7.3.6",
+    "@mui/x-data-grid": "^8.5.1",
+    "@types/qs": "^6.9.17",
+    "@types/reactour": "^1.18.5",
+    "@typescript-eslint/eslint-plugin": "^8.34.0",
+    "@typescript-eslint/parser": "^8.34.0",
+    "@xyflow/react": "^12.8.4",
+    "@yudiel/react-qr-scanner": "^2.3.1",
+    "@yz-dev/react-dynamic-module": "^0.1.0",
+    "axios": "^1.9.0",
+    "base32-decode": "^1.0.0",
+    "base32-encode": "2.0.0",
+    "chart.js": "4.5.1",
+    "color": "^5.0.0",
+    "compare-versions": "^6.1.1",
+    "crypto": "^1.0.1",
+    "csstype": "^3.1.3",
+    "electron-is-dev": "3.0.1",
+    "electron-squirrel-startup": "^1.0.0",
+    "electron-store": "11.0.2",
+    "eslint-config-react-app": "7.0.1",
+    "eslint-config-standard": "^17.1.0",
+    "eslint-plugin-prettier": "^5.4.0",
+    "immer": "11.1.0",
+    "is-electron": "^2.2.2",
+    "jwt-decode": "^4.0.0",
+    "notistack": "^3.0.1",
+    "oauth-pkce": "0.0.7",
+    "postcss": "^8.5.5",
+    "prop-types": "^15.8.1",
+    "qrcode": "^1.5.4",
+    "qs": "^6.13.1",
+    "react": "^19.0.0",
+    "react-chartjs-2": "5.3.1",
+    "react-dom": "^19.0.0",
+    "react-dropzone": "^14.3.5",
+    "react-easy-crop": "^5.2.0",
+    "react-fps": "^1.0.6",
+    "react-full-screen": "^1.1.1",
+    "react-gamepads": "^1.0.0",
+    "react-gcolor-picker": "^1.3.1",
+    "react-git-info": "^2.0.1",
+    "react-hotkeys-hook": "^5.0.1",
+    "react-icons": "^5.5.0",
+    "react-otp-input": "^3.1.1",
+    "react-rnd": "^10.4.14",
+    "react-router-dom": "^7.5.3",
+    "react-scripts": "5.0.1",
+    "react-webcam": "^7.2.0",
+    "react-zoom-pan-pinch": "^3.7.0",
+    "reactour": "^1.19.2",
+    "rimraf": "^6.0.1",
+    "sockette": "^2.0.6",
+    "strip-ansi": "7.1.2",
+    "styled-components": "^6.1.13",
+    "sudo-prompt": "^9.2.1",
+    "typescript": "^5.7.2",
+    "universal-cookie": "^8.0.1",
+    "use-debounce": "^10.0.5",
+    "use-indexeddb": "^2.0.2",
+    "use-long-press": "^3.2.0",
+    "web-vitals": "^5.0.3",
+    "webmidi": "^3.1.12",
+    "workbox-core": "^7.3.0",
+    "workbox-expiration": "^7.3.0",
+    "workbox-precaching": "^7.3.0",
+    "workbox-routing": "^7.3.0",
+    "workbox-strategies": "^7.3.0",
+    "zustand": "^5.0.4"
+  },
+  "scripts": {
+    "start": "craco start",
+    "prestarts": "echo HTTPS=true > .env",
+    "starts": "craco start",
+    "poststarts": "del .env",
+    "startandroid": "cross-env REACT_APP_LEDFX_ANDROID=true craco start",
+    "build": "run-script-os",
+    "build:win32": "set GENERATE_SOURCEMAP=false && set CI=false && craco build",
+    "build:default": "GENERATE_SOURCEMAP=false CI=false craco build",
+    "prebuild": "node -e \"let pkg=require('./package.json'); pkg.homepage='/'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));\"",
+    "postbuild": "run-script-os",
+    "postbuild:win32": "node -e \"let pkg=require('./package.json'); pkg.homepage='.'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));\" && rimraf build/app && rimraf build/preload.cjs && rimraf build/renderer.js && rimraf build/electron.js",
+    "postbuild:default": "node -e \"let pkg=require('./package.json'); pkg.homepage='.'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));\" && rm -rf build/app && rm -rf build/preload.cjs && rm -rf build/renderer.js && rm -rf build/electron.js",
+    "buildhass": "GENERATE_SOURCEMAP=false CI=false craco build",
+    "prebuildhass": "node -e \"let pkg=require('./package.json'); pkg.homepage='./'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));\"",
+    "postbuildhass": "node -e \"let pkg=require('./package.json'); pkg.homepage='.'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));\" && rm -rf build/app && rm -rf build/preload.cjs && rm -rf build/renderer.js && rm -rf build/electron.js",
+    "buildgh": "GENERATE_SOURCEMAP=false PUBLIC_URL=/LedFx-Frontend-v2/ CI=false craco build",
+    "prebuildgh": "node -e \"let pkg=require('./package.json'); pkg.homepage='/LedFx-Frontend-v2/'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));\"",
+    "postbuildgh": "rm -rf build/app && rm -rf build/preload.cjs && rm -rf build/renderer.js && rm -rf build/electron.js",
+    "buildledfx": "cross-env GENERATE_SOURCEMAP=false PUBLIC_URL=/ CI=false craco build",
+    "prebuildledfx": "node -e \"let pkg=require('./package.json'); pkg.homepage='/'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));\"",
+    "postbuildledfx": "node -e \"let pkg=require('./package.json'); pkg.homepage='.'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));\" && rimraf \"build/app\" && rimraf \"build/preload.cjs\" && rimraf \"build/renderer.js\" && rimraf \"build/electron.js\"",
+    "buildandroid": "cross-env REACT_APP_LEDFX_ANDROID=true GENERATE_SOURCEMAP=false PUBLIC_URL=/ CI=false craco build",
+    "prebuildandroid": "node -e \"let pkg=require('./package.json'); pkg.homepage='/'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));\"",
+    "postbuildandroid": "node -e \"let pkg=require('./package.json'); pkg.homepage='.'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));\" && rm -rf build/app && rm -f build/preload.cjs && rm -f build/renderer.js && rm -f build/electron.js",
+    "buildcloudflare": "cross-env GENERATE_SOURCEMAP=false PUBLIC_URL=/ CI=false craco build",
+    "prebuildcloudflare": "node -e \"let pkg=require('./package.json'); pkg.homepage='/'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));\"",
+    "postbuildcloudflare": "node -e \"let pkg=require('./package.json'); pkg.homepage='.'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));\" && rm -rf build/app && rm -f build/preload.cjs && rm -f build/renderer.js && rm -f build/electron.js",
+    "testold": "craco test",
+    "test": "npm-run-all --parallel test:types test:lint",
+    "test:types": "tsc --noEmit",
+    "test:lint": "eslint src/ --max-warnings 0",
+    "eject": "react-scripts eject",
+    "predeploy": "yarn buildgh",
+    "deploy": "gh-pages -d build",
+    "lint": "eslint",
+    "packs": "electron-builder --dir",
+    "dist": "run-script-os",
+    "predist": "node -e \"let pkg=require('./package.json'); pkg.homepage='.'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));\"",
+    "dist:win32": "npx tsc --project tsconfig.electron.json && set GENERATE_SOURCEMAP=false && set CI=false && craco build && electron-builder --config electron-builder.json -w zip -w portable -w nsis",
+    "dist:default": "npx tsc --project tsconfig.electron.json && GENERATE_SOURCEMAP=false CI=false craco build && electron-builder --config electron-builder.json",
+    "distsetup": "run-script-os",
+    "predistsetup": "node -e \"let pkg=require('./package.json'); pkg.homepage='.'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));\"",
+    "distsetup:win32": "npx tsc --project tsconfig.electron.json && set GENERATE_SOURCEMAP=false && set MS_STORE=true && craco build && electron-builder --config electron-builder.json -w nsis",
+    "distsetup:default": "npx tsc --project tsconfig.electron.json && GENERATE_SOURCEMAP=false MS_STORE=true craco build && electron-builder --config electron-builder.json",
+    "distcc": "run-script-os",
+    "predistcc": "run-script-os",
+    "distcc:win32": "npx tsc --project tsconfig.electron.json && set GENERATE_SOURCEMAP=false && set CI=false && craco build && electron-builder",
+    "distcc:default": "npx tsc --project tsconfig.electron.json && GENERATE_SOURCEMAP=false CI=false craco build && electron-builder",
+    "distall": "run-script-os",
+    "predistall": "set PUBLIC_URL=. && node -e \"let pkg=require('./package.json'); pkg.homepage='.'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));\"",
+    "distall:win32": "npx tsc --project tsconfig.electron.json && set GENERATE_SOURCEMAP=false && set CI=false && craco build && electron-builder && electron-builder --config electron-builder.json -w zip -w portable -w nsis",
+    "distall:default": "npx tsc --project tsconfig.electron.json && GENERATE_SOURCEMAP=false CI=false craco build && electron-builder && electron-builder --config electron-builder.json",
+    "dist-multi": "npx tsc --project tsconfig.electron.json && GENERATE_SOURCEMAP=false craco build && electron-builder -mwl",
+    "devold": "concurrently --kill-others \"cross-env BROWSER=none yarn start\" \"yarn electron\"",
+    "dev": "node scripts/dev-runner.cjs",
+    "predevs": "echo HTTPS=true > .env",
+    "devs": "concurrently --kill-others \"cross-env BROWSER=none yarn start\" \"yarn electrons\"",
+    "postdevs": "del .env",
+    "compile-electron": "run-script-os",
+    "compile-electron:win32": "copy app\\*.ts build\\*.js",
+    "compile-electron:default": "cp ./app/electron.ts ./build/electron.js && cp ./app/preload.ts ./build/preload.cjs && cp ./app/renderer.ts ./build/renderer.js && cp ./app/serviceWorker.ts ./build/serviceWorker.js",
+    "electron": "wait-on http://127.0.0.1:3000 && concurrently --kill-others \"npx tsc --project tsconfig.electron.json --watch\" \"wait-on public/electron.js && electron .\"",
+    "electrons": "wait-on https://localhost:3000 && concurrently --kill-others \"npx tsc --project tsconfig.electron.json --watch\" \"wait-on public/electron.js && electron .\"",
+    "postinstall": "electron-builder install-app-deps && patch-package",
+    "prebuild-storybook": "run-script-os",
+    "prebuild-storybook:win32": "set PUBLIC_URL=/LedFx-Frontend-v2/docs",
+    "prebuild-storybook:default": "PUBLIC_URL=/LedFx-Frontend-v2/docs",
+    "build-storybookgh": "PUBLIC_URL=/LedFx-Frontend-v2/docs storybook build",
+    "prebuild-storybookgh": "node -e \"let pkg=require('./package.json'); pkg.homepage='/LedFx-Frontend-v2/docs'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));\"",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
+    "build-typedoc": "npx --yes -p typedoc -p typedoc-material-theme typedoc ./src/api/ledfx.types.ts --plugin typedoc-material-theme --themeColor '#800000' --options ./src/api/typedoc.json",
+    "predistcc:darwin": "test -f scripts/predistcc-darwin.sh && bash scripts/predistcc-darwin.sh || node -e \"let pkg=require('./package.json'); pkg.homepage='.'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));\"",
+    "predistcc:win32": "node -e \"let pkg=require('./package.json'); pkg.homepage='.'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));\"",
+    "predistcc:default": "node -e \"let pkg=require('./package.json'); pkg.homepage='.'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));\"",
+    "postdistcc": "run-script-os",
+    "postdistcc:win32": "node -e \"let pkg=require('./package.json'); pkg.homepage='/'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));\"",
+    "postdistcc:default": "node -e \"let pkg=require('./package.json'); pkg.homepage='/'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));\""
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "plugin:storybook/recommended"
+    ],
+    "overrides": [
+      {
+        "files": [
+          "**/*.stories.*"
+        ],
+        "rules": {
+          "import/no-anonymous-default-export": "off"
+        }
+      }
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
+    "@chromatic-com/storybook": "^4.1.3",
+    "@craco/craco": "^7.1.0",
+    "@electron/notarize": "^3.1.1",
+    "@eslint/compat": "^2.0.0",
+    "@storybook/addon-docs": "^10.1.10",
+    "@storybook/addon-onboarding": "^10.1.10",
+    "@storybook/addon-themes": "^10.1.10",
+    "@storybook/cli": "^10.1.10",
+    "@storybook/preset-create-react-app": "^10.1.10",
+    "@storybook/react-webpack5": "^10.1.10",
+    "@types/babel__template": "^7.4.4",
+    "@types/chart.js": "^4.0.1",
+    "@types/color": "^4.2.0",
+    "@types/electron": "^1.6.12",
+    "@types/emscripten": "^1.39.13",
+    "@types/eslint__js": "^9.14.0",
+    "@types/node": "^25.0.3",
+    "@types/prop-types": "^15.7.15",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "@types/react-router-dom": "^5.3.3",
+    "@types/styled-components": "^5.1.36",
+    "concurrently": "^9.1.2",
+    "cross-env": "^10.1.0",
+    "electron": "^39.2.7",
+    "electron-builder": "^26.0.12",
+    "eslint": "9.39.2",
+    "eslint-config-prettier": "^10.1.3",
+    "eslint-import-resolver-typescript": "^4.4.3",
+    "eslint-plugin-import": "2.32.0",
+    "eslint-plugin-json": "^4.0.1",
+    "eslint-plugin-jsx-a11y": "6.10.2",
+    "eslint-plugin-n": "^17.23.1",
+    "eslint-plugin-promise": "^7.2.1",
+    "eslint-plugin-react": "^7.37.3",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-storybook": "^10.1.10",
+    "gh-pages": "^6.3.0",
+    "npm-run-all": "^4.1.5",
+    "patch-package": "^8.0.1",
+    "postinstall-postinstall": "^2.1.0",
+    "prettier": "^3.7.4",
+    "react-is": "^19.2.3",
+    "run-script-os": "^1.1.6",
+    "source-map-loader": "^5.0.0",
+    "storybook": "^10.1.10",
+    "wait-on": "^9.0.3",
+    "webpack": "^5.104.1"
+  },
+  "build": {
+    "files": [
+      "build/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "./extraResources/",
+        "to": "extraResources",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "./public/",
+        "to": "./",
+        "filter": [
+          "splash.html"
+        ]
+      },
+      {
+        "from": "./src/icons/png/",
+        "to": "./",
+        "filter": [
+          "banner.png"
+        ]
+      }
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "artifactName": "LedFx_CC-v${version}--${os}.${ext}"
+    },
+    "portable": {
+      "artifactName": "LedFx_CC-v${version}--${os}-portable.${ext}"
+    },
+    "nsis": {
+      "artifactName": "LedFx_CC-v${version}--${os}-setup.${ext}"
+    },
+    "linux": {
+      "icon": "build/icon.png",
+      "artifactName": "LedFx_CC-v${version}--${os}.${ext}"
+    },
+    "appImage": {
+      "artifactName": "LedFx_CC-v${version}--${os}.${ext}"
+    },
+    "snap": {
+      "artifactName": "LedFx_CC-v${version}--${os}.${ext}"
+    },
+    "mac": {
+      "icon": "build/icon.png",
+      "artifactName": "LedFx_CC-v${version}--${os}-${arch}.${ext}",
+      "category": "public.app-category.utilities",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "entitlements.mac.plist",
+      "entitlementsInherit": "entitlements.mac.inherit.plist",
+      "type": "distribution",
+      "identity": "CEE631E9774D506963ECC20D6BFA8213FB07B2B1",
+      "signIgnore": [
+        "extraResources/LedFx_core.app",
+        "extraResources/song-detector-macos"
+      ]
+    },
+    "dmg": {
+      "background": "src/assets/DMG_BG.jpg",
+      "contents": [
+        {
+          "x": 135,
+          "y": 165
+        },
+        {
+          "x": 407,
+          "y": 165,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "iconSize": 120,
+      "iconTextSize": 14,
+      "window": {
+        "height": 380
+      }
+    },
+    "protocols": {
+      "name": "LedFx",
+      "schemes": [
+        "ledfx"
+      ]
+    },
+    "appId": "M349WJSL2N.com.blade.ledfx",
+    "productName": "LedFx-CC"
+  }
+}

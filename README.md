@@ -30,15 +30,15 @@ The Android release series uses tags such as `v2.1.5-android.3`. The suffix is s
 
 ## Build from source
 
-See **[BUILDING.md](BUILDING.md)** for the exact WSL/Ubuntu environment, pinned Android and frontend dependencies, recursive submodules, all automation scripts, build instructions, APK verification, and wireless installation.
+See **[BUILDING.md](BUILDING.md)** for the exact WSL/Ubuntu environment, pinned Android and frontend dependencies, all automation scripts, build instructions, APK verification, and wireless installation.
 
 The short version is:
 
 ```bash
-git clone --recurse-submodules https://github.com/Skid-Fx/ledfx-autoconnect-android.git
+git clone https://github.com/Skid-Fx/ledfx-autoconnect-android.git
 cd ledfx-autoconnect-android
 git checkout skidfx-autoconnect
-git submodule update --init --recursive
+# Frontend and backend are included in this repository
 ./scripts/build_android.sh --prepare-only
 ./scripts/build_android.sh
 ```

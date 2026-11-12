@@ -1,0 +1,244 @@
+import { useEffect, useState } from 'react'
+import useStore from '../../store/useStore'
+import { useShallow } from 'zustand/shallow'
+import hexColor from '../../pages/Devices/EditVirtuals/EditMatrix/Actions/hexColor'
+
+const PixelGraphBase = ({
+  virtId,
+  dummy = false,
+  className = '',
+  active = false,
+  intGraphs = false,
+  showMatrix = false,
+  fullScreen = false,
+  db = false,
+  onDoubleClick
+}: {
+  virtId: string
+  dummy?: boolean
+  className?: string
+  active?: boolean
+  intGraphs?: boolean
+  showMatrix?: boolean
+  fullScreen?: boolean
+  db?: boolean
+  onDoubleClick?: any
+}) => {
+  const [pixels, setPixels] = useState<any>([])
+  const [shape, setShape] = useState<[null | number, null | number]>([null, null])
+
+  const showWarning = useStore((state) => state.uiPersist.warnings.lessPixels)
+  const round = useStore((state) => state.uiPersist.pixelGraphSettings?.round)
+  const space = useStore((state) => state.uiPersist.pixelGraphSettings?.space)
+  const stretch = useStore((state) => state.uiPersist.pixelGraphSettings?.stretch)
+  const { pixelGraphs, virtuals, devices, graphs, config } = useStore(
+    useShallow((state) => ({
+      pixelGraphs: state.pixelGraphs,
+      virtuals: state.virtuals,
+      devices: state.devices,
+      graphs: state.graphs,
+      config: state.config
+    }))
+  )
+
+  const rows = virtuals[virtId]?.is_device
+    ? (typeof virtuals[virtId]?.is_device === 'string' &&
+        (devices[virtuals[virtId]?.is_device]?.config as any)?.rows) ||
+      virtuals[virtId]?.config?.rows ||
+      1
+    : virtuals[virtId]?.config?.rows || 1
+
+  // console.time('hexColor');
+  // console.log('timestamp', new Date().getTime())
+  const decodedPixels =
+    config.transmission_mode === 'compressed'
+      ? pixels && pixels.length && hexColor(pixels, config.transmission_mode)
+      : pixels
+  // console.timeEnd('hexColor');
+  useEffect(() => {
+    const handleWebsockets = (e: any) => {
+      if (e.detail.id === virtId) {
+        setPixels(e.detail.pixels)
+        if (e.detail.shape[0] !== shape[0] && e.detail.shape[1] !== shape[1])
+          setShape(e.detail.shape)
+      }
+    }
+    document.addEventListener('visualisation_update', handleWebsockets)
+    return () => {
+      document.removeEventListener('visualisation_update', handleWebsockets)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [virtuals, pixelGraphs, virtId])
+
+  const tooLessPixels = useStore((state) => state.dialogs.lessPixels?.open || false)
+
+  if (!(graphs || intGraphs)) {
+    return null
+  }
+
+  const totalPixels = decodedPixels.length > 0 ? decodedPixels.length : pixels[0]?.length
+  const realPixelCount = virtuals[virtId]?.pixel_count || totalPixels
+  const realCols = Math.ceil(realPixelCount / rows)
+  const aspectRatio = realCols / rows
+  // console.log(shape)
+  const displayRows =
+    (shape && shape[0]) || (realPixelCount > 4096 ? Math.sqrt(4096 / aspectRatio) : rows)
+  const displayCols = (shape && shape[1]) || (realPixelCount > 4096 ? 4096 / displayRows : realCols)
+
+  return dummy || (tooLessPixels && showWarning) ? (
+    <div
+      style={{
+        maxWidth: fullScreen ? '100vw' : '520px',
+        maxHeight: fullScreen ? 'calc(100vh - 200px)' : 'unset',
+        display: 'flex',
+        width: '100%',
+        borderRadius: !round ? 0 : '10px',
+        overflow: 'hidden',
+        margin: '0.5rem 0 0 0'
+      }}
+      className={`${className} ${active ? 'active' : ''}`}
+      onDoubleClick={onDoubleClick}
+    >
+      <div
+        key={1}
+        style={{
+          backgroundColor: '#0002',
+          height: '20px',
+          flex: 1,
+          borderRadius: '0'
+        }}
+      />
+    </div>
+  ) : (pixels.length || decodedPixels.length) && rows > 1 && showMatrix ? (
+    <div
+      onDoubleClick={() => {
+        onDoubleClick()
+      }}
+      style={{
+        maxWidth: fullScreen ? '100vw' : '520px',
+        maxHeight: fullScreen ? '100vh' : 'unset',
+        display: 'flex',
+        flexDirection:
+          virtuals[virtId].id === 'launchpad-x' || virtuals[virtId].id === 'launchpad-x-matrix'
+            ? 'column-reverse'
+            : 'column',
+        width: '100%',
+        borderRadius: !round ? 0 : '10px',
+        overflow: 'hidden',
+        margin: db ? 0 : '0.5rem 0 0 0',
+        objectFit: stretch ? 'fill' : 'contain'
+      }}
+      className={`${className} ${active ? 'active' : ''}`}
+    >
+      {Array.from(Array(displayRows).keys()).map((row) => (
+        <div
+          key={`row-${row}`}
+          style={{
+            maxWidth: fullScreen ? '100vw' : '520px',
+            maxHeight: fullScreen ? 'calc(100vh - 200px)' : 'unset',
+            display: 'flex',
+            width: '100%',
+            borderRadius: '0',
+            overflow: 'hidden',
+            margin: '0'
+          }}
+          className={`${className} ${active ? 'active' : ''}`}
+        >
+          {(config.transmission_mode === 'compressed' && decodedPixels.length > 0
+            ? decodedPixels.slice(row * displayCols, (row + 1) * displayCols)
+            : pixels[0]?.slice(row * displayCols, (row + 1) * displayCols)
+          ).map((_p: any, i: number) => (
+            <div
+              key={i}
+              style={{
+                flex: 1,
+                margin: !space ? 0 : `${db || (totalPixels > 100 && displayRows > 7) ? 1 : 2}px`,
+                borderRadius: !round
+                  ? 0
+                  : db || (totalPixels > 100 && displayRows > 7)
+                    ? '50%'
+                    : '5px',
+                position: 'relative',
+                overflow: 'hidden',
+                maxWidth: db ? 3.6 : `${100 / displayCols}%`,
+                maxHeight: db ? 3.6 : `${100 / displayCols}%`
+              }}
+            >
+              <div
+                style={{
+                  width: '100%',
+                  paddingBottom: '100%',
+                  backgroundColor: active
+                    ? config.transmission_mode === 'compressed' &&
+                      decodedPixels.length > 0 &&
+                      decodedPixels[row * displayCols + i]
+                      ? `rgb(${Object.values(decodedPixels[row * displayCols + i])})`
+                      : `rgb(${
+                          pixels[0][row * displayCols + i]
+                        },${pixels[1][row * displayCols + i]},${pixels[2][row * displayCols + i]})`
+                    : '#0002'
+                }}
+              />
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  ) : (pixels[0] || decodedPixels).length ? (
+    <div
+      style={{
+        maxWidth: fullScreen ? '100vw' : '520px',
+        maxHeight: fullScreen ? 'calc(100vh - 200px)' : 'unset',
+        display: 'flex',
+        width: '100%',
+        borderRadius: !round ? 0 : '10px',
+        overflow: 'hidden',
+        margin: '0.5rem 0 0 0'
+      }}
+      className={`${className} ${active ? 'active' : ''}`}
+    >
+      {(config.transmission_mode === 'compressed' ? decodedPixels : pixels[0]).map(
+        (p: any, i: number) => (
+          <div
+            key={i}
+            style={{
+              height: '20px',
+              flex: 1,
+              borderRadius: '0',
+              backgroundColor: active
+                ? config.transmission_mode === 'compressed'
+                  ? `rgb(${Object.values(p)})`
+                  : `rgb(${pixels[0][i]},${pixels[1][i]},${pixels[2][i]})`
+                : '#0002'
+            }}
+          />
+        )
+      )}
+    </div>
+  ) : (
+    <div
+      style={{
+        maxWidth: fullScreen ? '100vw' : '520px',
+        maxHeight: fullScreen ? 'calc(100vh - 200px)' : 'unset',
+        display: 'flex',
+        width: '100%',
+        borderRadius: !round ? 0 : '10px',
+        overflow: 'hidden',
+        margin: '0.5rem 0 0 0'
+      }}
+      className={`${className} ${active ? 'active' : ''}`}
+    >
+      <div
+        key={1}
+        style={{
+          height: '20px',
+          borderRadius: '0',
+          flex: 1,
+          backgroundColor: '#0002'
+        }}
+      />
+    </div>
+  )
+}
+
+export default PixelGraphBase

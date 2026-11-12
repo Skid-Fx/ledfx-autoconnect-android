@@ -27,21 +27,11 @@ This is the build and maintenance guide for the **SkidFx LedFx AutoConnect Andro
 
 Development Python 3.12, p4a's host Python 3.11, and the Python packaged into the APK are **different interpreters**. Avoid mixing their site-packages or substituting build-tool versions.
 
-## 2. Get the *complete* source
+## 2. Get the complete source
 
-The application has **two nested Git submodules**: the main project's `deps/ledfx` engine, and that engine's `frontend` source. Both repositories must point to **published, accessible commits** containing the Android modifications; checking in only the parent repository is insufficient.
+Clone https://github.com/Skid-Fx/ledfx-autoconnect-android.git and check out branch skidfx-autoconnect.
 
-```bash
-git clone --recurse-submodules https://github.com/Skid-Fx/ledfx-autoconnect-android.git
-cd ledfx-autoconnect-android
-git checkout skidfx-autoconnect
-git submodule update --init --recursive
-git submodule status --recursive
-```
-
-**Release preparation warning:** At the time of the release audit, the `deps/ledfx/frontend` submodule URL was still `https://github.com/YeonV/LedFx-Frontend-v2.git`, even though that checkout had local SkidFx modifications. Before publishing, push the frontend changes to an accessible SkidFx fork, update `deps/ledfx/.gitmodules` and the recorded submodule commit, push the modified LedFx fork, and finally update the main repo's `deps/ledfx` gitlink. After this is done, **verify a recursive fresh clone**. Do not point at an unpushed commit or assume a detached HEAD is a permanent branch.
-
-The original source checkout used during development is `~/AndroidBuilds/ledfx-android-upstream`; do not change the unrelated `~/AndroidBuilds/ledfx-android` checkout. The directory name is not part of the build configuration.
+The Android build system, Python backend (deps/ledfx), and React frontend (deps/ledfx/frontend) are tracked together in one Git repository. No submodules are required.
 
 ## 3. One-time WSL prerequisites
 
@@ -186,19 +176,15 @@ adb -s $device shell monkey -p com.skidfx.ledfxautoconnect -c android.intent.cat
 
 Wireless debug IP:port is **session-dependent**; use the current ADB device identifier. `adb install -r` preserves user data when signatures match. **Do not run** `adb shell pm clear` or uninstall just to refresh a frontend: doing so could erase configured devices.
 
-## 8. Git source publication and releases (nested repositories)
+## 8. Git commits and releases
 
-Three Git working trees must be handled **inside out**: frontend → `deps/ledfx` engine → main Android repository. At the release audit, frontend and engine were both detached HEAD checkouts, and frontend still tracked upstream `YeonV/LedFx-Frontend-v2`. They are not safe to publish as-is.
+All SkidFx source is maintained in the main Android repository. Review, build, and test changes before committing. Commit frontend, backend, and Android changes using the main skidfx-autoconnect branch, then push to origin. Keep feature-specific commits so changes can be shared with upstream developers.
 
-1. Create or identify a writable, public SkidFx frontend fork. Set `deps/ledfx/frontend`'s `origin`/push remote to that fork. Commit the modified frontend source on a named SkidFx branch and push it. Confirm the commit is accessible on GitHub.
-2. In the engine repo, update `.gitmodules` to the SkidFx frontend fork URL (not the original upstream), record the new frontend gitlink, and commit the WLED API and updated `ledfx_frontend` asset files on a named branch. Push to the already configured SkidFx LedFx engine repository. Confirm its recorded frontend commit resolves.
-3. In the main Android repo on `skidfx-autoconnect`, commit the updated engine gitlink, new frontend/API preparation scripts, `scripts/build_android.sh`, and the current `README.md`/`BUILDING.md`. Push to GitHub.
-4. In a separate **fresh clone** using `git clone --recurse-submodules`, run submodule status and source/package checks. Validate a normal build when practical; at minimum, confirm `./scripts/build_android.sh --prepare-only` and absence of missing checkout files. The original successful phone build was on the established WSL cache, not a pristine build environment.
-5. Create tag **`v2.1.5-android.3`** on the pushed main commit. Attach the **tested APK**, not a newly inferred or stale file. Set its release name and assets consistently. Do **not** mark it draft/prerelease accidentally unless intended: the frontend update checker enumerates releases (including prereleases), excludes drafts, compares SkidFx tags, and requires an `.apk` asset. Existing `v2.1.5-android.2` must remain available.
+Rollback tag: pre-monorepo-v2.1.5-android.3.
 
-Do not add to Git: `.venv`, `.buildozer`, `node_modules`, frontend `build/`, `*.apk`, log files, local fingerprint stamps (e.g. `ledfx_frontend/.skidfx-build.sha256`) or user secrets. Do include generated frontend assets needed by the packaged `ledfx_frontend` Python package. The HTML/JS/CSS and hashed filenames will change on release; review removals and additions rather than assuming deleted obsolete hashes indicate broken files.
+For releases, update the SkidFx version, build and test the APK, commit the source and documentation, then publish the tested APK with release notes. Preserve earlier releases.
 
-For a future release, update **`deps/ledfx/frontend/src/config/skidfxRelease.ts`** (`SKIDFX_VERSION`) and the dashboard will display the shared version; the GitHub update button compares that string to `vX.Y.Z-android.N` tags. Updating the underlying LedFx `PROJECT_VERSION` is a separate decision, and changing it affects APK naming/Android version behavior.
+Do not commit node_modules, Android build caches, local credentials, or APK build outputs.
 
 ## 9. Handoff: where to work next time
 

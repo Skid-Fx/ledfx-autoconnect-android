@@ -1,0 +1,551 @@
+import asyncio
+import logging
+import os
+import time
+import warnings
+import webbrowser
+from concurrent.futures import ThreadPoolExecutor
+
+import numpy as np
+import pybase64
+
+from ledfx.color import (
+    LEDFX_COLORS,
+    LEDFX_GRADIENTS,
+    parse_color,
+    parse_gradient,
+    validate_color,
+    validate_gradient,
+)
+from ledfx.config import (
+    VISUALISATION_CONFIG_KEYS,
+    Transmission,
+    create_backup,
+    get_ssl_certs,
+    load_config,
+    remove_virtuals_active_effects,
+    save_config,
+)
+from ledfx.consts import PROJECT_VERSION
+from ledfx.devices import Devices
+from ledfx.effects import Effects
+from ledfx.events import (
+    Event,
+    Events,
+    LedFxShutdownEvent,
+    VisualisationUpdateEvent,
+)
+from ledfx.http_manager import HttpServer
+from ledfx.integrations import Integrations
+from ledfx.mdns_manager import ZeroConfRunner
+from ledfx.presets import ledfx_presets
+from ledfx.scenes import Scenes
+from ledfx.tools.ts_generator import generate_typescript_types
+from ledfx.utils import (
+    RollingQueueHandler,
+    UpdateChecker,
+    UserDefaultCollection,
+    async_fire_and_forget,
+    currently_frozen,
+    get_sorted_physical_ips,
+    init_image_cache,
+    pixels_boost,
+    resize_pixels,
+    shape_to_fit_len,
+)
+from ledfx.virtuals import Virtuals
+
+_LOGGER = logging.getLogger(__name__)
+
+if currently_frozen():
+    warnings.filterwarnings("ignore")
+
+
+class LedFxCore:
+
+    EXIT_CODES = {
+        1: "LedFx encountered an error - Shutting down.",
+        2: "Keyboard interrupt - Shutting down.",
+        3: "Shutdown request via API - Shutting down.",
+        4: "Restart request via API - Restarting.",
+        5: "Shutdown request via CI testing flag - Shutting down.",
+    }
+
+    def __init__(
+        self,
+        config_dir,
+        host=None,
+        port=None,
+        port_s=None,
+        icon=None,
+        ci_testing=False,
+        generate_typescript_types=False,
+        clear_config=False,
+        clear_effects=False,
+        offline_mode=False,
+    ):
+
+        self.icon = icon
+        self.config_dir = config_dir
+
+        if clear_config:
+            _LOGGER.warning("Clearing LedFx config.")
+            create_backup(config_dir, "DELETE")
+
+        self.config = load_config(config_dir)
+        self.config["hosts"] = get_sorted_physical_ips()
+
+        if clear_effects:
+            _LOGGER.warning("Clearing active effects.")
+            remove_virtuals_active_effects(self.config)
+
+        self.config["ledfx_presets"] = ledfx_presets
+        self.host = host if host else self.config["host"]
+        self.port = port if port else self.config["port"]
+        self.port_s = port_s if port_s else self.config["port_s"]
+        self.ci_testing = ci_testing
+        self.generate_typescript_types = generate_typescript_types
+        self.offline_mode = offline_mode
+
+        try:
+            import uvloop
+
+            self.loop = uvloop.new_event_loop()
+            _LOGGER.info("Using uvloop for asyncio loop")
+        except ImportError:
+            try:
+                import winloop
+
+                self.loop = winloop.new_event_loop()
+                _LOGGER.info("Using winloop for asyncio loop")
+            except ImportError:
+                self.loop = asyncio.new_event_loop()
+                _LOGGER.info("Using standard asyncio loop")
+
+        self.thread_executor = ThreadPoolExecutor()
+        self.loop.set_default_executor(self.thread_executor)
+        self.loop.set_exception_handler(self.loop_exception_handler)
+        asyncio.set_event_loop(self.loop)
+
+        if self.config.get("debug_asyncio", False):
+            self.loop.set_debug(True)
+
+        if self.icon:
+            self.setup_icon_menu()
+
+        self.setup_logqueue()
+        self.events = Events(self)
+        self.setup_visualisation_events()
+        self.events.add_listener(
+            self.handle_base_configuration_update, Event.BASE_CONFIG_UPDATE
+        )
+        self.http = HttpServer(
+            ledfx=self, host=self.host, port=self.port, port_s=self.port_s
+        )
+
+        self.exit_code = None
+
+    def handle_base_configuration_update(self, event):
+        """
+        Handles the update of the base configuration where there are specific things that need to be done.
+
+        Currently, only visualisation configuration is handled this way, since they require the creation of new event listeners.
+
+        Args:
+            event (Event): The event that triggered the update - this will always be a BaseConfigUpdateEvent.
+        """
+        _LOGGER.debug("Handling base configuration update.")
+        if any(key in event.config for key in VISUALISATION_CONFIG_KEYS):
+            _LOGGER.debug(
+                "Visualisation configuration updated - resetting visualisation event listeners."
+            )
+            self.setup_visualisation_events()
+
+    def dev_enabled(self):
+        return self.config["dev_mode"]
+
+    def loop_exception_handler(self, loop, context):
+        kwargs = {}
+        exception = context.get("exception")
+        if exception:
+            kwargs["exc_info"] = (
+                type(exception),
+                exception,
+                exception.__traceback__,
+            )
+
+        _LOGGER.error(
+            "Exception in core event loop: {}".format(context["message"]),
+            **kwargs,
+        )
+
+    def open_ui(self):
+        # Check if we're binding to all adaptors
+        if str(self.config["host"]) == "0.0.0.0":
+            url = f"http://127.0.0.1:{str(self.port)}"
+        else:
+            # If the user has specified an adaptor, launch its address
+            url = self.http.base_url
+        try:
+            webbrowser.get().open(url)
+        except webbrowser.Error:
+            _LOGGER.warning(
+                f"Failed to open default web browser. To access LedFx's web ui, open {url} in your browser."
+            )
+
+    def setup_icon_menu(self):
+        import pystray
+
+        self.icon.menu = pystray.Menu(
+            pystray.MenuItem(
+                f"LedFx - {PROJECT_VERSION}", None, enabled=False
+            ),
+            pystray.Menu.SEPARATOR,
+            pystray.MenuItem("Open", self.open_ui, default=True),
+            pystray.MenuItem(
+                "Check for Update", self.check_and_notify_updates
+            ),
+            pystray.MenuItem("Quit Ledfx", self.stop),
+        )
+
+    def setup_visualisation_events(self):
+        """
+        creates event listeners to fire visualisation events at
+        a given rate
+        """
+        # Remove existing listeners if they exist
+        if hasattr(self, "visualisation_update_listener"):
+            _LOGGER.debug(
+                "Removing existing visualisation event handler and event listeners."
+            )
+            self.visualisation_update_listener = None
+            self.virtual_listener()
+            self.device_listener()
+
+        min_time_since = 1 / self.config["visualisation_fps"]
+        time_since_last = {}
+        max_len = self.config["visualisation_maxlen"]
+
+        def handle_visualisation_update(event):
+            is_device = event.event_type == Event.DEVICE_UPDATE
+            time_now = time.time()
+
+            if is_device:
+                vis_id = getattr(event, "device_id")
+            else:
+                vis_id = getattr(event, "virtual_id")
+
+            try:
+                time_since = time_now - time_since_last[vis_id]
+                if time_since < min_time_since:
+                    return
+            except KeyError:
+                pass
+
+            time_since_last[vis_id] = time_now
+
+            # grab rows from up in virtual land
+            virtual = self.virtuals.get(vis_id)
+            # protect against deleted virtuals
+            if virtual:
+                # protect against rows = 0
+                rows = max(1, virtual.rows)
+            else:
+                rows = 1
+
+            pixels = event.pixels
+            pixels_len = len(pixels)
+            shape = (rows, int(pixels_len / rows))
+
+            if pixels_len > max_len:
+                new_shape, pixels_len = shape_to_fit_len(
+                    max_len, shape, pixels_len
+                )
+                pixels = resize_pixels(pixels[:pixels_len], shape, new_shape)
+                shape = new_shape
+
+            if self.config["ui_brightness_boost"] != 0:
+                pixels = pixels_boost(
+                    pixels, self.config["ui_brightness_boost"], 100
+                )
+
+            if (
+                self.config["transmission_mode"]
+                == Transmission.BASE64_COMPRESSED
+            ):
+                b_arr = bytes(pixels.astype(np.uint8).flatten())
+                pixels = pybase64.b64encode(b_arr).decode("ASCII")
+            else:
+                pixels = pixels.astype(np.uint8).T.tolist()
+
+            self.events.fire_event(
+                VisualisationUpdateEvent(is_device, vis_id, pixels, shape)
+            )
+
+        _LOGGER.debug("Setting up visualisation event handler.")
+        self.visualisation_update_listener = handle_visualisation_update
+        _LOGGER.debug("Adding virtual update event listener.")
+        self.virtual_listener = self.events.add_listener(
+            self.visualisation_update_listener,
+            Event.VIRTUAL_UPDATE,
+        )
+        _LOGGER.debug("Adding device update event listener.")
+        self.device_listener = self.events.add_listener(
+            self.visualisation_update_listener,
+            Event.DEVICE_UPDATE,
+        )
+
+    def setup_logqueue(self):
+        def log_filter(record):
+            return (record.name != "ledfx.api.log") and (record.levelno >= 20)
+
+        self.logqueue = asyncio.Queue(maxsize=100)
+        logqueue_handler = RollingQueueHandler(self.logqueue)
+        logqueue_handler.addFilter(log_filter)
+        root_logger = logging.getLogger()
+        root_logger.addHandler(logqueue_handler)
+
+    def check_and_notify_updates(self, show_check_notification=None):
+        """
+        Checks for updates of LedFx and notifies the user if a new version is available.
+
+        Args:
+            show_check_notification (object): An optional parameter that is never called with any specific value.
+                When called via pystray, it is an icon object. This behavior is unintended but functional.
+
+        Returns:
+            None
+
+        Raises:
+            None
+        """
+
+        if show_check_notification:
+            if self.icon and self.icon.HAS_NOTIFICATION:
+                self.icon.notify("Checking for updates...", "LedFx")
+        is_release = os.getenv("IS_RELEASE", "false").lower()
+        if is_release == "false":
+            _LOGGER.info("Not checking for updates - not a release.")
+            return
+        _LOGGER.info("Checking for updates...")
+        if UpdateChecker.get_release_information():
+            if UpdateChecker.update_available():
+                latest_version = UpdateChecker.get_latest_version()
+                release_url = UpdateChecker.get_release_url()
+                _LOGGER.warning(
+                    f"New version of LedFx available: {latest_version} - {release_url}"
+                )
+
+                if self.icon and self.icon.HAS_NOTIFICATION:
+                    self.icon.notify(
+                        f"New version of LedFx available: {latest_version}",
+                        "LedFx",
+                    )
+                    try:
+                        webbrowser.get().open(release_url)
+                    except webbrowser.Error:
+                        pass
+            else:
+                _LOGGER.info("LedFx is up to date.")
+        else:
+            _LOGGER.warning("Unable to get update information.")
+            if show_check_notification:
+                if self.icon and self.icon.HAS_NOTIFICATION:
+                    self.icon.notify(
+                        "Unable to get update information", "LedFx"
+                    )
+
+    def start(self, open_ui=False, pause_all=False):
+        async_fire_and_forget(
+            self.async_start(open_ui=open_ui, pause_all=pause_all), self.loop
+        )
+
+        try:
+            self.loop.run_forever()
+        except KeyboardInterrupt:
+            self.loop.call_soon(
+                self.loop.create_task, self.async_stop(exit_code=2)
+            )
+            self.loop.run_forever()
+        except BaseException:
+            # Catch all other exceptions and terminate the application. The loop
+            # exception handler will take care of logging the actual error and
+            # LedFx will cleanly shutdown.
+            self.loop.run_until_complete(self.async_stop(exit_code=1))
+            pass
+        finally:
+            self.loop.stop()
+
+        return self.exit_code
+
+    async def async_start(self, open_ui=False, pause_all=False):
+        _LOGGER.info(f"Starting LedFx, listening on {self.host}:{self.port}")
+
+        if (
+            self.icon is not None
+            and self.icon.notify is not None
+            and self.icon.HAS_NOTIFICATION
+        ):
+            self.icon.notify(
+                "Started in background.\nUse the tray icon to open.", "LedFx"
+            )
+
+        # Initialize image cache
+        cache_config = self.config.get("image_cache", {})
+        init_image_cache(
+            self.config_dir,
+            max_size_mb=cache_config.get("max_size_mb", 500),
+            max_items=cache_config.get("max_items", 500),
+        )
+
+        self.devices = Devices(self)
+        self.effects = Effects(self)
+        self.virtuals = Virtuals(self)
+        # Ensure we start with a fresh virtual registry when reusing the
+        # Virtuals singleton across LedFxCore lifecycles.
+        self.virtuals.reset_for_core(self)
+        self.integrations = Integrations(self)
+        self.scenes = Scenes(self)
+        self.colors = UserDefaultCollection(
+            self,
+            "Colors",
+            LEDFX_COLORS,
+            "user_colors",
+            validate_color,
+            parse_color,
+        )
+        self.gradients = UserDefaultCollection(
+            self,
+            "Gradients",
+            LEDFX_GRADIENTS,
+            "user_gradients",
+            validate_gradient,
+            parse_gradient,
+        )
+
+        # TODO: Deferr
+        self.devices.create_from_config(self.config["devices"])
+        await self.devices.async_initialize_devices()
+
+        self.zeroconf = ZeroConfRunner(ledfx=self)
+        self.virtuals.create_from_config(
+            self.config["virtuals"], pause_all=pause_all
+        )
+        self.integrations.create_from_config(self.config["integrations"])
+
+        # Start the HTTP server once internal registries are initialized so
+        # websockets and REST endpoints are fully ready before the UI opens.
+        await self.http.start(get_ssl_certs(config_dir=self.config_dir))
+
+        # Only open the UI once devices and virtuals have been initialized
+        if open_ui:
+            self.open_ui()
+
+        if self.config["scan_on_startup"]:
+            async_fire_and_forget(
+                self.zeroconf.discover_wled_devices(), self.loop
+            )
+
+        async_fire_and_forget(
+            self.integrations.activate_integrations(), self.loop
+        )
+
+        if self.ci_testing:
+            await asyncio.sleep(5)
+            self.stop(5)
+        if self.generate_typescript_types:
+            _LOGGER.info("Generating TypeScript types via CLI flag...")
+            current_script_dir = os.path.dirname(os.path.abspath(__file__))
+            project_root = os.path.abspath(
+                os.path.join(current_script_dir, "..")
+            )
+            output_file_name = "ledfx_types.ts"
+            ts_code_string = generate_typescript_types()
+
+            try:
+                os.makedirs(project_root, exist_ok=True)
+                output_file_path = os.path.join(project_root, output_file_name)
+
+                _LOGGER.info(
+                    f"Attempting to write TypeScript types to: {output_file_path}"
+                )
+                with open(output_file_path, "w", encoding="utf-8") as f:
+                    f.write(ts_code_string)
+                _LOGGER.info(
+                    f"Successfully wrote TypeScript types to {output_file_path}"
+                )
+
+            except OSError as e:
+                _LOGGER.error(f"IOError writing TypeScript types to file: {e}")
+            except Exception as e:
+                _LOGGER.error(
+                    f"Unexpected error writing TypeScript types to file: {e}"
+                )
+
+            self.stop(5)
+
+        if not self.offline_mode:
+            self.check_and_notify_updates()
+
+        if self.config["startup_scene_id"] != "":
+            if self.scenes.activate(self.config["startup_scene_id"]):
+                _LOGGER.info(
+                    f"startup_scene_id; {self.config['startup_scene_id']} activated."
+                )
+            else:
+                _LOGGER.warning(
+                    f"startup_scene_id: {self.config['startup_scene_id']} not found."
+                )
+
+        if pause_all:
+            # pause at the virtuals level
+            self.virtuals.pause_all()
+
+    def stop(self, exit_code):
+        async_fire_and_forget(self.async_stop(exit_code), self.loop)
+
+    async def async_stop(self, exit_code):
+        if not self.loop:
+            return
+
+        print("Stopping LedFx.")
+        try:
+            _LOGGER.info(self.EXIT_CODES.get(exit_code, "Unknown exit code."))
+            # Fire a shutdown event
+            self.events.fire_event(LedFxShutdownEvent())
+            _LOGGER.info("Stopping HTTP Server...")
+            await self.http.stop()
+
+            # Cancel all the remaining task and wait
+            tasks = [
+                task
+                for task in asyncio.all_tasks()
+                if task is not asyncio.current_task()
+            ]
+            if tasks:
+                _LOGGER.debug(
+                    f"Killing {len(tasks)} tasks prior to shutdown..."
+                )
+                # Cancel all tasks concurrently
+                group = asyncio.gather(*tasks, return_exceptions=True)
+                group.cancel()
+                # Wait for all tasks to be cancelled
+                try:
+                    await group
+                except asyncio.CancelledError:
+                    pass
+                _LOGGER.debug("All tasks killed.")
+            # Save the configuration before shutting down
+            save_config(config=self.config, config_dir=self.config_dir)
+
+        except Exception as e:
+            _LOGGER.error(f"An error occurred while stopping: {e}")
+            self.exit_code = 1
+
+        finally:
+            self.thread_executor.shutdown()
+            # Don't overwrite error exit code
+            if self.exit_code != 1:
+                self.exit_code = exit_code
+            self.loop.stop()
+            return exit_code
